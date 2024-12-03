@@ -31,25 +31,3 @@ update_requirements: requirements-loose.txt
 	$(VENV_PIP) install -r $^
 	$(VENV_PIP) freeze > requirements.txt
 	$(MAKE) $(VENV)
-
-.PHONY: build
-build:
-	docker build -t student-app .
-
-.PHONY: run-docker
-run-docker: build
-	docker run --rm -ti student-app
-
-.PHONY: deploy
-deploy: build
-	# TODO: Install awscli, lightsailctl in venv
-	aws lightsail push-container-image  --service-name student-app --label student-app --image student-app:latest
-	aws lightsail create-container-service-deployment --no-cli-pager --cli-input-json "$$(<lightsail.json)"
-
-.PHONY: run
-run: $(VENV)
-	$(VENV_PYTHON) -m flask --app student-app/app.py run
-
-.PHONY: debug
-debug: $(VENV)
-	$(VENV_PYTHON) -m flask --app student-app/app.py run --debug
