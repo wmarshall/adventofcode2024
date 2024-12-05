@@ -1,3 +1,4 @@
+import itertools
 import typing
 
 import util
@@ -18,7 +19,7 @@ def generate_rules_map(rules: list[str]) -> dict[int, Rule]:
     return rules_map
 
 
-def is_print_ok(rules_map: dict[int, Rule], pages_to_print: list[int]) -> bool:
+def is_print_ok(rules_map: dict[int, Rule], pages_to_print: typing.Sequence[int]) -> bool:
     all_pages = set(pages_to_print)
     for i, page in enumerate(pages_to_print):
         try:
@@ -35,6 +36,37 @@ def is_print_ok(rules_map: dict[int, Rule], pages_to_print: list[int]) -> bool:
     return True
 
 
+def find_correct_order(
+    rules_map: dict[int, Rule],
+    pages_to_print: set[int],
+    fixed_prior: None | list[int] = None,
+) -> list[int] | None:
+    if fixed_prior is None:
+        fixed_prior = []
+    if len(fixed_prior) == len(pages_to_print):
+        return fixed_prior
+    prior_set = set(fixed_prior)
+    candidates = set()
+    for p in pages_to_print - prior_set:
+        try:
+            rule = rules_map[p]
+            relevant_pages = pages_to_print- {p}
+            required_before = relevant_pages & rule.before
+            required_after = relevant_pages & rule.after
+            if required_before > prior_set or required_after > (relevant_pages - prior_set):
+                continue
+            candidates.add(p)
+        except KeyError:
+            # No rules means it can go anywhere
+            candidates.add(p)
+
+    for candidate in candidates:
+        if correct := find_correct_order(rules_map, pages_to_print, fixed_prior + [candidate]):
+            return correct
+    return None
+
+
+
 def middle_page(pages: list[int]) -> int:
     return pages[len(pages) // 2]
 
@@ -47,26 +79,37 @@ def main():
         [int(p) for p in pages.split(",")] for pages in puzzle_input[split_idx + 1 :]
     ]
     rules_map = generate_rules_map(rules)
-    print(
-        [
-            (i, middle_page(pages))
-            for i, pages in enumerate(prints)
-            if is_print_ok(
-                rules_map,
-                pages,
-            )
-        ]
-    )
-    print(
-        sum(
-            middle_page(pages)
-            for i, pages in enumerate(prints)
-            if is_print_ok(
-                rules_map,
-                pages,
-            )
-        )
-    )
+
+    unprintable = [p for p in prints if not is_print_ok(rules_map, p)]
+    s = 0
+    for p in unprintable:
+        print(p)
+        corrected = find_correct_order(rules_map, set(p))
+        print(corrected)
+        if corrected is None:
+            raise Exception("please no")
+        s += middle_page(corrected)
+    print(s)
+    # print(
+    #     [
+    #         (i, middle_page(pages))
+    #         for i, pages in enumerate(prints)
+    #         if is_print_ok(
+    #             rules_map,
+    #             pages,
+    #         )
+    #     ]
+    # )
+    # print(
+    #     sum(
+    #         middle_page(pages)
+    #         for i, pages in enumerate(prints)
+    #         if is_print_ok(
+    #             rules_map,
+    #             pages,
+    #         )
+    #     )
+    # )
 
 
 if __name__ == "__main__":
