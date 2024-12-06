@@ -19,7 +19,9 @@ def generate_rules_map(rules: list[str]) -> dict[int, Rule]:
     return rules_map
 
 
-def is_print_ok(rules_map: dict[int, Rule], pages_to_print: typing.Sequence[int]) -> bool:
+def is_print_ok(
+    rules_map: dict[int, Rule], pages_to_print: typing.Sequence[int]
+) -> bool:
     all_pages = set(pages_to_print)
     for i, page in enumerate(pages_to_print):
         try:
@@ -50,10 +52,12 @@ def find_correct_order(
     for p in pages_to_print - prior_set:
         try:
             rule = rules_map[p]
-            relevant_pages = pages_to_print- {p}
+            relevant_pages = pages_to_print - {p}
             required_before = relevant_pages & rule.before
             required_after = relevant_pages & rule.after
-            if required_before > prior_set or required_after > (relevant_pages - prior_set):
+            if required_before > prior_set or required_after > (
+                relevant_pages - prior_set
+            ):
                 continue
             candidates.add(p)
         except KeyError:
@@ -61,10 +65,11 @@ def find_correct_order(
             candidates.add(p)
 
     for candidate in candidates:
-        if correct := find_correct_order(rules_map, pages_to_print, fixed_prior + [candidate]):
+        if correct := find_correct_order(
+            rules_map, pages_to_print, fixed_prior + [candidate]
+        ):
             return correct
     return None
-
 
 
 def middle_page(pages: list[int]) -> int:
@@ -90,26 +95,6 @@ def main():
             raise Exception("please no")
         s += middle_page(corrected)
     print(s)
-    # print(
-    #     [
-    #         (i, middle_page(pages))
-    #         for i, pages in enumerate(prints)
-    #         if is_print_ok(
-    #             rules_map,
-    #             pages,
-    #         )
-    #     ]
-    # )
-    # print(
-    #     sum(
-    #         middle_page(pages)
-    #         for i, pages in enumerate(prints)
-    #         if is_print_ok(
-    #             rules_map,
-    #             pages,
-    #         )
-    #     )
-    # )
 
 
 if __name__ == "__main__":
