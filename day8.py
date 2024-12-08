@@ -46,6 +46,38 @@ def antinodes(ants: typing.Iterable[Antenna]) -> typing.Iterable[Point2]:
         )
 
 
+def antinodes_with_harmonics(
+    ants: typing.Iterable[Antenna], upper_limit: Point2
+) -> typing.Iterable[Point2]:
+    for a, b in itertools.combinations(ants, 2):
+        a_to_b = Point2((a.pos.row - b.pos.row), (a.pos.col - b.pos.col))
+        # iterate down, then up
+        i = 0
+        while True:
+            point = Point2(
+                row=(a.pos.row + i * a_to_b.row),
+                col=(a.pos.col + i * a_to_b.col),
+            )
+            if not (
+                0 <= point.row < upper_limit.row and 0 <= point.col < upper_limit.col
+            ):
+                break
+            yield point
+            i -= 1
+        i = 1
+        while True:
+            point = Point2(
+                row=(a.pos.row + i * a_to_b.row),
+                col=(a.pos.col + i * a_to_b.col),
+            )
+            if not (
+                0 <= point.row < upper_limit.row and 0 <= point.col < upper_limit.col
+            ):
+                break
+            yield point
+            i += 1
+
+
 def main():
     in_map = util.load_input(util.REAL, 8).splitlines()
     rows = len(in_map)
@@ -56,7 +88,7 @@ def main():
         grouped_ants.setdefault(ant.kind, set()).add(ant)
     unique_antinodes: set[Point2] = set()
     for kind, ants_of_kind in grouped_ants.items():
-        for anode in antinodes(ants_of_kind):
+        for anode in antinodes_with_harmonics(ants_of_kind, Point2(rows, cols)):
             if 0 <= anode.row < rows and 0 <= anode.col < cols:
                 unique_antinodes.add(anode)
     print(len(unique_antinodes))
