@@ -4,40 +4,76 @@ from collections import deque
 import util
 
 
-def parse_disk_map(encoded_map: str) -> typing.Iterable[typing.Optional[int]]:
+class File(typing.NamedTuple):
+    id: typing.Optional[int]
+    length: int
+
+    def __len__(self) -> int:
+        return self.length
+
+
+def parse_disk_map(encoded_map: str) -> typing.Iterable[File]:
     is_file = True
     file_id = 0
     for block_len in encoded_map:
-        for _ in range(int(block_len)):
-            if is_file:
-                yield file_id
-            else:
-                yield None
+        yield File(file_id if is_file else None, int(block_len))
         if not is_file:
             file_id += 1
         is_file = not is_file
 
 
-def compact(disk_map: deque[typing.Optional[int]]) -> typing.Iterable[int]:
-    from_left = True
-    while len(disk_map) > 0:
-        if from_left:
-            val = disk_map.popleft()
-            if val is None:
-                from_left = False
+# this won't work on the real thing because it doesn't file.id > 9
+def visualize(disk_map: list[File]):
+    parts = [
+        str(file.id if file.id is not None else ".") * len(file) for file in disk_map
+    ]
+    print("".join(parts))
+
+
+def compact(disk_map: list[File]) -> list[File]:
+    # before head is dense, no compaction needed
+    head_idx = 0
+    tail_idx = len(disk_map)
+    while head_idx < tail_idx:
+        tail_idx -= 1
+        tail = disk_map[tail_idx]
+        if tail.id is None:
+            continue
+        maybe_dense = True
+        for idx in range(head_idx, tail_idx):
+            head = disk_map[idx]
+            if head.id is not None:
+                if maybe_dense:
+                    head_idx = idx
                 continue
-            yield val
-        else:
-            val = disk_map.pop()
-            if val is not None:
-                yield val
-                from_left = True
+            maybe_dense = False
+            if len(head) >= len(tail):
+                disk_map[idx] = tail
+                remaining = len(head) - len(tail)
+                if remaining > 0:
+                    disk_map.insert(idx + 1, File(None, remaining))
+                    tail_idx += 1
+                disk_map[tail_idx] = File(None, len(tail))
+                break
+
+    return disk_map
+
+
+def checksum(disk_map: list[File]) -> int:
+    s = 0
+    block = 0
+    for f in disk_map:
+        for i in range(len(f)):
+            if f.id is not None:
+                s += f.id * block
+            block += 1
+    return s
 
 
 def main():
-    disk_map = deque(parse_disk_map(util.load_input(util.REAL, 9).strip()))
+    disk_map = list(parse_disk_map(util.load_input(util.REAL, 9).strip()))
     compacted = compact(disk_map)
-    print(sum(i * file_id for i, file_id in enumerate(compacted)))
+    print(checksum(compacted))
 
 
 if __name__ == "__main__":
