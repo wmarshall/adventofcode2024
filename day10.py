@@ -47,14 +47,16 @@ def main():
     ]
     rows = len(topo_map)
     cols = len(topo_map[0])
-    s = 0
+    score = 0
+    rating = 0
     for trailhead in trailheads(topo_map):
         peaks: set[Point2] = set()
         for point in reachable(trailhead, topo_map, rows, cols):
             if topo_map[point.row][point.col] == 9:
                 peaks.add(point)
-        s += len(peaks)
-    print(s)
+                rating += 1
+        score += len(peaks)
+    print(f"{score=}, {rating=}")
 
 
 if __name__ == "__main__":
