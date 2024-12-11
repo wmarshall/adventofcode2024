@@ -1,27 +1,28 @@
+import functools
+
 import util
 
 
-def blink(stones: list[int]) -> list[int]:
-    out_stones: list[int] = []
-
-    for stone in stones:
-        if stone == 0:
-            out_stones.append(1)
-        elif len(strd := str(stone)) % 2 == 0:
-            prefix = strd[: len(strd) // 2]
-            suffix = strd[len(strd) // 2 :]
-            out_stones.append(int(prefix, base=10))
-            out_stones.append(int(suffix, base=10))
-        else:
-            out_stones.append(stone * 2024)
-    return out_stones
+@functools.lru_cache(maxsize=None)
+def blink_one_stone(stone: int, times: int) -> int:
+    if times == 0:
+        return 1
+    if stone == 0:
+        return blink_one_stone(1, times - 1)
+    elif len(strd := str(stone)) % 2 == 0:
+        prefix = strd[: len(strd) // 2]
+        suffix = strd[len(strd) // 2 :]
+        return blink_one_stone(int(prefix, base=10), times - 1) + blink_one_stone(
+            int(suffix, base=10), times - 1
+        )
+    else:
+        return blink_one_stone(stone * 2024, times - 1)
 
 
 def main():
     stones = [int(i) for i in util.load_input(util.REAL, 11).split()]
-    for _ in range(25):
-        stones = blink(stones)
-    print(len(stones))
+    times = 75
+    print(sum(blink_one_stone(s, times) for s in stones))
 
 
 if __name__ == "__main__":
