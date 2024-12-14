@@ -26,6 +26,25 @@ class Region(typing.NamedTuple):
             s += len(neighboring_points - self.plots)
         return s
 
+    def sides(self):
+        edges: dict[tuple[int, int], set[Point2]] = {d: set() for d in DIRECTIONS}
+        for plot in self.plots:
+            for d_row, d_col in DIRECTIONS:
+                neighboring_point = Point2(plot.row + d_row, plot.col + d_col)
+                if neighboring_point not in self.plots:
+                    edges[(d_row, d_col)].add(neighboring_point)
+
+        side_count = 0
+        for direction, edge_set in edges.items():
+            for outside_point in edge_set:
+                perpendicular = (direction[1], direction[0])
+                preceding = Point2(
+                        outside_point.row - perpendicular[0],
+                        outside_point.col - perpendicular[1],
+                    )
+                side_count += preceding not in edge_set
+        return side_count
+
 
 DIRECTIONS = (
     (0, 1),
@@ -76,9 +95,9 @@ def main():
     garden = util.load_input(util.REAL, 12).splitlines()
     price = 0
     for region in find_regions(garden):
-        area, perimeter = region.area(), region.perimeter()
-        print(f"{region.kind}{area, perimeter}")
-        price += area * perimeter
+        area, sides = region.area(), region.sides()
+        print(f"{region.kind}{area, sides}")
+        price += area * sides
     print(price)
 
 
