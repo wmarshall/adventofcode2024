@@ -35,19 +35,21 @@ def simulate(robot: Robot, steps: int, bounds: tup2) -> tup2:
     return final_pos_wrapped
 
 
-def visualize(positions: collections.Counter[tup2], bounds: tup2):
+def visualize(positions: collections.Counter[tup2], bounds: tup2) -> str:
     center = (bounds[0] // 2, bounds[1] // 2)
+    s = ""
     for y in range(bounds[1]):
         for x in range(bounds[0]):
             count = positions[(x, y)]
             if count > 9:
                 raise Exception("can't visualize")
             if count == 0:
-                count = "."
-                if x == center[0] or y == center[1]:
-                    count = "x"
-            print(count, end="")
-        print()
+                count = " "
+                # if x == center[0] or y == center[1]:
+                #     count = "x"
+            s += str(count)
+        s += "\n"
+    return s
 
 
 def safety_factor(positions: collections.Counter[tup2], bounds: tup2) -> int:
@@ -66,16 +68,63 @@ def safety_factor(positions: collections.Counter[tup2], bounds: tup2) -> int:
     return reduce(operator.mul, quad_counts)
 
 
+DIRECTIONS = (
+    (0, 1),
+    (-1, 0),
+    (0, -1),
+    (1, 0),
+)
+
+def largest_blob(positions: collections.Counter[tup2]) -> int:
+    largest = 0
+    seen: set[tup2] = set()
+    for pos in positions:
+        if pos in seen:
+            continue
+        blob_size = 0
+        blob_q = {pos}
+        while blob_q:
+            blob_pos = blob_q.pop()
+            seen.add(blob_pos)
+            new_pos_count = positions[pos]
+            if new_pos_count == 0:
+                raise Exception("impossible")
+            blob_size += new_pos_count
+            for dx, dy in DIRECTIONS:
+                neighbor = (blob_pos[0] + dx, blob_pos[1] + dy)
+                if positions[neighbor] == 0:
+                    continue
+                if neighbor in seen:
+                    continue
+                blob_q.add(neighbor)
+        if blob_size > largest:
+            largest = blob_size
+
+    return largest
+
+
 def main():
     input_path = util.REAL
     bounds = (11, 7)
     if input_path == util.REAL:
         bounds = (101, 103)
 
-    robots = parse_robots(util.load_input(input_path, 14).splitlines())
-    final_positions = collections.Counter(simulate(r, 100, bounds) for r in robots)
-    visualize(final_positions, bounds)
-    print(safety_factor(final_positions, bounds))
+    robots = list(parse_robots(util.load_input(input_path, 14).splitlines()))
+    # Dude I don't know what a christmas tree looks like, let's just see what the cycle time is
+    # cycle time for my real input was 10403, but that's not the answer!
+    seen_final_positions:set[str] = set()
+    for i in range(10404):
+        print(f"{i=}")
+        final_positions = collections.Counter(simulate(r, i, bounds) for r in robots)
+        viz = visualize(final_positions, bounds)
+        print(viz)
+        largest = largest_blob(final_positions)
+        print(largest)
+        if largest >= 10:
+            input("Enter to continue")
+        if viz in seen_final_positions:
+            break
+        seen_final_positions.add(viz)
 
 
 if __name__ == "__main__":
